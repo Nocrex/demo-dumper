@@ -1,0 +1,11 @@
+[package]
+name = "demo-dumper"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.97"
+glob = "0.3.2"
+serde = "1.0.219"
+serde_json = "1.0.140"
+tf-demo-parser = "0.5.1"
