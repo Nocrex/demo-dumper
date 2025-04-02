@@ -60,15 +60,12 @@ fn main() {
                 eprintln!("Failed to parse demo {demo:?}: {e:?}");
             }
         }
-        if processed % 20 == 0 {
-            save(&out);
-        }
     }
     save(&out);
 }
 
 fn save(out: &Output){
-    println!("Writing progress to demo_dump.json");
+    println!("Writing data to demo_dump.json");
     fs::write(Path::new("demo_dump.json"), serde_json::to_string_pretty(out).unwrap()).unwrap();
 }
 
