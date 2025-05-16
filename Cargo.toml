@@ -7,6 +7,7 @@ edition = "2021"
 anyhow = "1.0.98"
 bitbuffer = { version = "0.10.9"}
 clap = { version = "4.5.38", features = ["derive"] }
+crc = "1"
 glob = "0.3.2"
 hound = "3.5.1"
 opus = "0.3.0"
