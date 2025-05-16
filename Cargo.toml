@@ -4,8 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-anyhow = "1.0.97"
+anyhow = "1.0.98"
+bitbuffer = { version = "0.10.9"}
+clap = { version = "4.5.38", features = ["derive"] }
 glob = "0.3.2"
+hound = "3.5.1"
+opus = "0.3.0"
 serde = "1.0.219"
 serde_json = "1.0.140"
 tf-demo-parser = "0.5.1"
