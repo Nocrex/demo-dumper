@@ -96,12 +96,10 @@ fn decode_voice_packet(
     let steamid: u64 = voice_data.read().unwrap();
     let player = players.entry(steamid).or_insert_with(|| Player::new());
     assert_eq!(voice_data.read::<u8>().unwrap(), 0xB);
+
     let samplerate: u16 = voice_data.read().unwrap();
-    assert_eq!(
-        samplerate, SAMPLE_RATE,
-        "Found invalid sample rate {}",
-        samplerate
-    );
+    assert_eq!(samplerate, SAMPLE_RATE);
+
     match voice_data.read::<u8>().unwrap() {
         0x6 => {
             let data_len: u16 = voice_data.read().unwrap();

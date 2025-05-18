@@ -1,0 +1,13 @@
+diff --git a/src/demo/message/voice.rs b/src/demo/message/voice.rs
+index 1f279d8..d3229a2 100644
+--- a/src/demo/message/voice.rs
++++ b/src/demo/message/voice.rs
+@@ -71,7 +71,7 @@ pub struct VoiceDataMessage<'a> {
+     proximity: u8,
+     length: u16,
+     #[size = "length"]
+-    data: Stream<'a>,
++    pub data: Stream<'a>,
+ }
+ 
+ #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
