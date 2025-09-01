@@ -98,8 +98,13 @@ impl Player {
 
         for clip in &self.audio {
             let start = ticks_to_samples(clip.start_tick) as usize;
-            let end = clip.end_tick_sample_num()  as usize;
-            for (out_sample, clip_sample) in samples.get_mut(start..=end).unwrap().iter_mut().zip(&clip.data){
+            let end = clip.end_tick_sample_num() as usize;
+            for (out_sample, clip_sample) in samples
+                .get_mut(start..=end)
+                .unwrap()
+                .iter_mut()
+                .zip(&clip.data)
+            {
                 *out_sample += clip_sample;
             }
         }
@@ -114,6 +119,14 @@ fn decode_voice_packet(
     tick: u32,
 ) {
     let mut voice_data = voice_data_message.data.clone();
+
+    if voice_data.bits_left() < 32 {
+        println!(
+            "Packet has too little data ({} bits), skipping!",
+            voice_data.bits_left()
+        );
+        return;
+    }
 
     let data = voice_data
         .read_bits(voice_data.bits_left() - 4 * 8)
@@ -227,7 +240,7 @@ pub fn voice_extract(file: PathBuf, split_clips: bool, output_folder: PathBuf) {
 
     let spec = hound::WavSpec {
         channels: 1,
-        sample_rate: 24000,
+        sample_rate: SAMPLE_RATE as u32,
         bits_per_sample: 32,
         sample_format: hound::SampleFormat::Float,
     };
