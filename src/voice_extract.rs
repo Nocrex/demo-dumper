@@ -14,6 +14,10 @@ const FRAME_SIZE: usize = 480;
 const SAMPLE_RATE: u16 = 24000;
 const TICKRATE: f64 = 200.0 / 3.0;
 
+fn ticks_to_samples(ticks: u32) -> u64 {
+    (ticks as f64 / TICKRATE * SAMPLE_RATE as f64).ceil() as u64
+}
+
 struct AudioClip {
     pub data: Vec<f32>,
     pub start_tick: u32,
@@ -29,6 +33,10 @@ impl AudioClip {
 
     pub fn end_tick_float(&self) -> f64 {
         self.start_tick as f64 + (self.data.len() as f64 / SAMPLE_RATE as f64 * TICKRATE)
+    }
+
+    pub fn end_tick_sample_num(&self) -> u64 {
+        ticks_to_samples(self.start_tick) + self.data.len() as u64
     }
 
     pub fn end_tick(&self) -> u32 {
@@ -54,9 +62,12 @@ impl Player {
 
     pub fn decode_chunk(&mut self, chunk: &[u8], frame: u16, tick: u32) -> Result<usize> {
         let mut decoded_samples = 0;
-        if frame == 0 {
+        if frame < self.current_frame {
             self.audio.push(AudioClip::new(tick));
-            self.current_frame = 0;
+            self.current_frame = frame;
+        }
+        if self.audio.is_empty() {
+            self.audio.push(AudioClip::new(tick));
         }
         if self.current_frame < frame {
             let diff = frame - self.current_frame;
@@ -76,19 +87,22 @@ impl Player {
     }
 
     pub fn get_continuous_audio(&self) -> Vec<f32> {
-        let mut samples = vec![];
-        let mut tick = 0.0;
+        let sample_count = self
+            .audio
+            .iter()
+            .map(|c| c.end_tick_sample_num())
+            .max()
+            .unwrap_or_default();
+
+        let mut samples = vec![0.0; sample_count as usize + SAMPLE_RATE as usize];
 
         for clip in &self.audio {
-            let diff =
-                ((clip.start_tick as f64 - tick) / TICKRATE * SAMPLE_RATE as f64).round() as u32;
-            if diff > 0 {
-                samples.extend_from_slice(&vec![0.0; diff as usize]);
+            let start = ticks_to_samples(clip.start_tick) as usize;
+            let end = clip.end_tick_sample_num()  as usize;
+            for (out_sample, clip_sample) in samples.get_mut(start..=end).unwrap().iter_mut().zip(&clip.data){
+                *out_sample += clip_sample;
             }
-            samples.extend_from_slice(&clip.data);
-            tick = clip.end_tick_float();
         }
-        samples.extend_from_slice(&vec![0.0; SAMPLE_RATE as usize]);
 
         samples
     }
@@ -137,11 +151,15 @@ fn decode_voice_packet(
 
                 player.decode_chunk(&chunk_data, cur_frame, tick).unwrap();
             }
+            println!(
+                "Tick {}, SteamID: {steamid}, audio data: {data_len} bytes",
+                tick
+            );
         }
         0x0 => {
             let duration: u16 = voice_data.read().unwrap();
             println!(
-                "Tick: {}, SteamID: {steamid}, Silence duration: {duration} ns",
+                "Tick {}, SteamID: {steamid}, Silence duration: {duration} ns",
                 tick
             );
         }
@@ -149,7 +167,7 @@ fn decode_voice_packet(
     }
 }
 
-pub fn voice_extract(file: PathBuf, split_clips: bool) {
+pub fn voice_extract(file: PathBuf, split_clips: bool, output_folder: PathBuf) {
     let data = fs::read(&file).expect("Couldn't read demo file");
 
     let demo = Demo::new(&data);
@@ -217,12 +235,12 @@ pub fn voice_extract(file: PathBuf, split_clips: bool) {
         if split_clips {
             for clip in player.audio {
                 let mut writer = hound::WavWriter::create(
-                    format!(
+                    output_folder.join(format!(
                         "{}_{}-{}_{playerid}.wav",
                         &demo_name,
                         clip.start_tick,
                         clip.end_tick()
-                    ),
+                    )),
                     spec,
                 )
                 .unwrap();
@@ -232,8 +250,11 @@ pub fn voice_extract(file: PathBuf, split_clips: bool) {
                 writer.finalize().unwrap();
             }
         } else {
-            let mut writer =
-                hound::WavWriter::create(format!("{}_{playerid}.wav", &demo_name), spec).unwrap();
+            let mut writer = hound::WavWriter::create(
+                output_folder.join(format!("{}_{playerid}.wav", &demo_name)),
+                spec,
+            )
+            .unwrap();
             for sample in player.get_continuous_audio() {
                 writer.write_sample(sample).unwrap();
             }
