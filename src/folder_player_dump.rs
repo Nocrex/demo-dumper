@@ -16,7 +16,7 @@ struct ParseResult {
 type PlayerMap = HashMap<String, String>;
 type Output = HashMap<PathBuf, PlayerMap>;
 
-pub fn folder_player_dump(){
+pub fn folder_player_dump(out_file: Option<PathBuf>){
     let jobs = Arc::new(Mutex::new(Vec::new()));
     let (res_tx, res_rx) = channel();
     
@@ -61,12 +61,9 @@ pub fn folder_player_dump(){
             }
         }
     }
-    save(&out);
-}
-
-fn save(out: &Output){
-    println!("Writing data to demo_dump.json");
-    fs::write(Path::new("demo_dump.json"), serde_json::to_string_pretty(out).unwrap()).unwrap();
+    let path = out_file.unwrap_or_else(||PathBuf::from("demo_dump.json"));
+    println!("Writing data to {}", path.display());
+    fs::write(path, serde_json::to_string_pretty(&out).unwrap()).unwrap();
 }
 
 fn parse_demo(path: &Path) -> Result<PlayerMap> {

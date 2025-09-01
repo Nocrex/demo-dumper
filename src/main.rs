@@ -10,19 +10,28 @@ use clap::{Parser, Subcommand};
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
 struct Args {
-    /// File to extract inputs from
-    pub input_file: Option<PathBuf>,
-
     #[command(subcommand)]
     command: Option<Command>,
 }
 
 #[derive(Subcommand)]
 enum Command {
+    /// Dump all players from the demos in the current folder into a json file
+    Players {
+        /// File to save players into
+        out_file: Option<PathBuf>,
+    },
+    /// Dump (some) inputs from a demo
+    Inputs {
+        /// Demo to extract inputs from
+        demo: PathBuf,
+        /// File to save inputs to
+        out_file: Option<PathBuf>,
+    },
     /// Extract voicechat from demo
     Voice {
-        /// File to extract audio from
-        file: PathBuf,
+        /// Demo to extract audio from
+        demo: PathBuf,
         /// Output seperate audio clips for each voicechat transmission
         #[arg(short)]
         split_clips: bool,
@@ -30,10 +39,10 @@ enum Command {
         #[arg(short)]
         output_folder: Option<PathBuf>,
     },
-    /// Dump packets from demo
+    /// Dump packets from demo (not really useful except for developers :P)
     Packets {
-        /// Input file
-        file: PathBuf,
+        /// Input demo
+        demo: PathBuf,
         /// Output file
         outfile: PathBuf,
     },
@@ -43,16 +52,29 @@ fn main() {
     let args = Args::parse();
     if let Some(cmd) = args.command {
         match cmd {
-            Command::Voice { file, split_clips , output_folder} => {
-                voice_extract::voice_extract(file, split_clips, output_folder.unwrap_or_else(||PathBuf::from(".")));
+            Command::Players { out_file } => {
+                folder_player_dump::folder_player_dump(out_file);
             }
-            Command::Packets { file, outfile } => {
+            Command::Inputs { demo, out_file } => {
+                input_dump::dump_inputs(demo, out_file);
+            }
+            Command::Voice {
+                demo: file,
+                split_clips,
+                output_folder,
+            } => {
+                voice_extract::voice_extract(
+                    file,
+                    split_clips,
+                    output_folder.unwrap_or_else(|| PathBuf::from(".")),
+                );
+            }
+            Command::Packets {
+                demo: file,
+                outfile,
+            } => {
                 packet_dump::packet_dump(file, outfile);
             }
         }
-    } else if let Some(file) = args.input_file {
-        input_dump::dump_inputs(file);
-    } else {
-        folder_player_dump::folder_player_dump();
     }
 }

@@ -13,7 +13,7 @@ use tf_demo_parser::{
 
 static KEYMAP_STR: &str = include_str!("data/source keymap.txt");
 
-pub fn dump_inputs(file: PathBuf) {
+pub fn dump_inputs(demo_file: PathBuf, out_file: Option<PathBuf>) {
     let mut out = String::new();
     let mapping_re = Regex::new(r"(\d+), ([^\)]+)").unwrap();
     let keymap: HashMap<&str, &str> = mapping_re
@@ -21,7 +21,7 @@ pub fn dump_inputs(file: PathBuf) {
         .map(|cap| (cap.get(1).unwrap().as_str(), cap.get(2).unwrap().as_str()))
         .collect();
 
-    let data = fs::read(&file).expect("Couldn't read demo file");
+    let data = fs::read(&demo_file).expect("Couldn't read demo file");
 
     let demo = Demo::new(&data);
 
@@ -60,12 +60,11 @@ pub fn dump_inputs(file: PathBuf) {
         handler.handle_packet(packet).unwrap();
     }
     print!("{}", out);
-    fs::write(
-        &format!(
+    let path = out_file.unwrap_or_else(|| {
+        PathBuf::from(format!(
             "inputs-{}.txt",
-            file.file_name().unwrap_or_default().to_string_lossy()
-        ),
-        out,
-    )
-    .unwrap();
+            demo_file.file_name().unwrap_or_default().to_string_lossy()
+        ))
+    });
+    fs::write(&path, out).unwrap();
 }
