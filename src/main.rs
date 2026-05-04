@@ -1,6 +1,6 @@
 mod folder_player_dump;
 mod input_dump;
-mod packet_dump;
+mod console_commands;
 mod voice_extract;
 
 use std::path::PathBuf;
@@ -39,8 +39,8 @@ enum Command {
         #[arg(short)]
         output_folder: Option<PathBuf>,
     },
-    /// Dump packets from demo (not really useful except for developers :P)
-    Packets {
+    /// Dump console commands from demo
+    Commands {
         /// Input demo
         demo: PathBuf,
         /// Output file
@@ -69,11 +69,11 @@ fn main() {
                     output_folder.unwrap_or_else(|| PathBuf::from(".")),
                 );
             }
-            Command::Packets {
+            Command::Commands {
                 demo: file,
                 outfile,
             } => {
-                packet_dump::packet_dump(file, outfile);
+                console_commands::dump_commands(file, outfile);
             }
         }
     }

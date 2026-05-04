@@ -10,7 +10,7 @@ use tf_demo_parser::{
     Demo,
 };
 
-pub fn packet_dump(fp_in: PathBuf, fp_out: PathBuf) {
+pub fn dump_commands(fp_in: PathBuf, fp_out: PathBuf) {
     let out = fs::File::create(fp_out).expect("Couldn't create output file");
 
     let data = fs::read(&fp_in).expect("Couldn't read demo file");
@@ -42,21 +42,8 @@ pub fn packet_dump(fp_in: PathBuf, fp_out: PathBuf) {
                     (u32::from(pack.tick) as f32 / header.ticks as f32) * 100.
                 );
             }
-            Packet::DataTables(pack) => {
-                for tab in &pack.tables {
-                    let name = tab.name.as_str();
-                    if let Some(clname) = pack
-                        .server_classes
-                        .iter()
-                        .find(|cl| cl.data_table.as_str() == name)
-                    {
-                        writeln!(&out, "{}", clname.name.as_str()).unwrap();
-                    }
-                    writeln!(&out, "{}", tab.name.as_str()).unwrap();
-                    for prop in &tab.props {
-                        writeln!(&out, "    {}: {:?}", prop.name, prop).unwrap();
-                    }
-                }
+            Packet::ConsoleCmd(pack) => {
+                writeln!(&out, "{}: {}", pack.tick, pack.command).unwrap();
             }
             _ => (),
         }
